@@ -5,6 +5,7 @@ const AppError = require('./../utilis/appError');
 const User = require('./../models/usersModel');
 const catchAsync = require('./../utilis/catchAsync');
 
+//authentication
 const signToken = id => {
 	return jwt.sign({ id }, process.env.JWT_SECRET, {
 		expiresIn: process.env.JWT_EXPIRES_IN
@@ -98,3 +99,16 @@ exports.protect = catchAsync(async (req, res, next) => {
 	// console.log(req.user);
 	next();
 });
+
+//autorization
+exports.restrictTo = (...roles) => {
+	return (req, res, next) => {
+		// roles ['admin', 'lead-guide',]. role=['user']
+		if (!roles.includes(req.user.role)) {
+			return next(
+				new AppError('you dont have permission to perform this action', 403)
+			);
+		}
+		next();
+	};
+};
