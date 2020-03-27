@@ -113,7 +113,7 @@ tourSchema.post(/^find/, function(docs, next) {
 		`Time taken by the query to be executed  ${Date.now() -
 			this.start} millisecond`
 	);
-	console.log(docs);
+	// console.log(docs);
 	next();
 });
 
