@@ -79,7 +79,13 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
 });
 
 exports.getTour = catchAsync(async (req, res, next) => {
-	const tour = await Tour.findById(req.params.id);
+	const tour = await Tour.findById(req.params.id).populate('reviews');
+	//populte is used for getting data from refrencing object from id , as we did to take data of guides from tour
+	//we use query middleware, so that we do not have to rewrite the code where we need to geta data from a guides
+	// .populate({
+	// 	path: 'guides',
+	// 	select: '-__v -passwordChangeAt'
+	// });
 
 	if (!tour) {
 		return next(new AppError('No tour found with that ID', 404));
