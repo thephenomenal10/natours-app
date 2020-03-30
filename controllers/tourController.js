@@ -1,7 +1,7 @@
 const Tour = require('./../models/tourmodel');
-const APIFeatures = require('./../utilis/apiFeatures');
 const catchAsync = require('./../utilis/catchAsync');
-const AppError = require('./../utilis/appError');
+// const AppError = require('./../utilis/appError');
+const factory = require('./handleFactory');
 
 exports.aliasTopTours = async (req, res, next) => {
 	req.query.limit = '5';
@@ -11,134 +11,72 @@ exports.aliasTopTours = async (req, res, next) => {
 	next();
 };
 
-exports.getAllTours = catchAsync(async (req, res, next) => {
-	// const tours = await Tour.find()
-	// 	.where('duration')
-	// 	.equals(5)
-	// 	.where('difficulty')
-	// 	.equals('easy');
+exports.getAllTours = factory.getAll(Tour);
+exports.getTour = factory.getOne(Tour, { path: 'reviews' });
+// exports.getTour = catchAsync(async (req, res, next) => {
+// 	const tour = await Tour.findById(req.params.id).populate('reviews');
+// 	//populte is used for getting data from refrencing object from id , as we did to take data of guides from tour
+// 	//we use query middleware, so that we do not have to rewrite the code where we need to geta data from a guides
+// 	// .populate({
+// 	// 	path: 'guides',
+// 	// 	select: '-__v -passwordChangeAt'
+// 	// });
 
-	//BUILD THE QUERY
-	//filtering
-	// const queryObj = { ...req.query };
-	// const excludeFields = ['page', 'sort', 'limit', 'fields'];
-	// excludeFields.forEach(el => delete queryObj[el]);
+// 	if (!tour) {
+// 		return next(new AppError('No tour found with that ID', 404));
+// 	}
 
-	// //2 advance filtering
-	// let queryStr = JSON.stringify(queryObj);
-	// queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
-	// console.log(JSON.parse(queryStr));
+// 	res.status(201).json({
+// 		status: 'success',
+// 		data: {
+// 			tour
+// 		}
+// 	});
+// });
 
-	// console.log(req.query, queryObj);
+exports.createTour = factory.createOne(Tour);
+// exports.createTour = catchAsync(async (req, res, next) => {
+// 	const newTour = await Tour.create(req.body);
+// 	res.status(201).json({
+// 		status: 'success',
+// 		data: {
+// 			tour: newTour
+// 		}
+// 	});
+// });
 
-	// let query = Tour.find(JSON.parse(queryStr));
+exports.updateTour = factory.updateOne(Tour);
+// exports.updateTour = catchAsync(async (req, res, next) => {
+// 	const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
+// 		new: true,
+// 		runValidators: true
+// 	});
+// 	if (!tour) {
+// 		return next(new AppError('No tour found with that ID', 404));
+// 	}
 
-	//3 sorting
-	// if (req.query.sort) {
-	// 	const sortBy = req.query.sort.split(' ').join(' ');
-	// 	console.log(sortBy);
-	// 	query = query.sort(sortBy);
-	// } else {
-	// 	query = query.sort('-createdAt');
-	// }
+// 	res.status(201).json({
+// 		status: 'success',
+// 		data: {
+// 			tour
+// 		}
+// 	});
+// });
 
-	//FIELDS LIMITING
-	// if (req.query.fields) {
-	// 	const fields = req.query.fields.split(',').join(' ');
-	// 	query = query.select(fields);
-	// } else {
-	// 	query = query.select('-__v');
-	// }
+exports.deleteTour = factory.deleteOne(Tour);
+// exports.deleteTour = catchAsync(async (req, res, next) => {
+// 	const tour = await Tour.findByIdAndDelete(req.params.id);
 
-	//Pagination
-
-	// const page = req.query.page * 1 || 1;
-	// const limit = req.query.limit * 1 || 100;
-	// const skip = (page - 1) * limit;
-	// query = query.skip(skip).limit(limit);
-
-	// if (req.query.page) {
-	// 	const numTours = await Tour.countDocuments();
-	// 	if (skip >= numTours) throw new Error('this pag does not exist');
-	// }
-	//EXECUTE THE QUERY
-	const features = new APIFeatures(Tour.find(), req.query)
-		.filter()
-		.sort()
-		.limitFields()
-		.paginate();
-	const tours = await features.query;
-
-	res.status(200).json({
-		status: 'success',
-		results: tours.length,
-		data: {
-			tours
-		}
-	});
-});
-
-exports.getTour = catchAsync(async (req, res, next) => {
-	const tour = await Tour.findById(req.params.id).populate('reviews');
-	//populte is used for getting data from refrencing object from id , as we did to take data of guides from tour
-	//we use query middleware, so that we do not have to rewrite the code where we need to geta data from a guides
-	// .populate({
-	// 	path: 'guides',
-	// 	select: '-__v -passwordChangeAt'
-	// });
-
-	if (!tour) {
-		return next(new AppError('No tour found with that ID', 404));
-	}
-
-	res.status(201).json({
-		status: 'success',
-		data: {
-			tour
-		}
-	});
-});
-
-exports.createTour = catchAsync(async (req, res, next) => {
-	const newTour = await Tour.create(req.body);
-	res.status(201).json({
-		status: 'success',
-		data: {
-			tour: newTour
-		}
-	});
-});
-
-exports.updateTour = catchAsync(async (req, res, next) => {
-	const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
-		new: true,
-		runValidators: true
-	});
-	if (!tour) {
-		return next(new AppError('No tour found with that ID', 404));
-	}
-
-	res.status(201).json({
-		status: 'success',
-		data: {
-			tour
-		}
-	});
-});
-
-exports.deleteTour = catchAsync(async (req, res, next) => {
-	const tour = await Tour.findByIdAndDelete(req.params.id);
-
-	if (!tour) {
-		return next(new AppError('No tour found with that ID', 404));
-	}
-	res.status(202).json({
-		status: 'success',
-		data: {
-			tour: null
-		}
-	});
-});
+// 	if (!tour) {
+// 		return next(new AppError('No tour found with that ID', 404));
+// 	}
+// 	res.status(202).json({
+// 		status: 'success',
+// 		data: {
+// 			tour: null
+// 		}
+// 	});
+// });
 
 exports.tourStats = catchAsync(async (req, res, next) => {
 	const stats = await Tour.aggregate([

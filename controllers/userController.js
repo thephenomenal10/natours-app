@@ -1,6 +1,7 @@
 const User = require('./../models/usersModel');
 const catchAsync = require('./../utilis/catchAsync');
 const AppError = require('./../utilis/appError');
+const factory = require('./handleFactory');
 
 const filterObj = (obj, ...allowedFields) => {
 	const newObj = {};
@@ -9,18 +10,6 @@ const filterObj = (obj, ...allowedFields) => {
 	});
 	return newObj;
 };
-
-exports.getAllUsers = catchAsync(async (req, res) => {
-	const users = await User.find();
-
-	res.status(200).json({
-		status: 'success',
-		results: users.length,
-		data: {
-			users
-		}
-	});
-});
 
 exports.updateMe = catchAsync(async (req, res, next) => {
 	//1. create error if user posted an password data
@@ -55,27 +44,7 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
 	});
 });
 
-exports.createUser = (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'this route is not yet created !'
-	});
-};
-exports.updateUser = (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'this route is not yet created !'
-	});
-};
-exports.deleteUser = (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'this route is not yet created !'
-	});
-};
-exports.getUser = (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'this route is not yet created !'
-	});
-};
+exports.getAllUsers = factory.getAll(User);
+exports.updateUser = factory.updateOne(User); //***DO NOT UPDATE THE PASSWORD WITH THIS */
+exports.deleteUser = factory.deleteOne(User);
+exports.getUser = factory.getOne(User);
