@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Tour = require('./tourmodel');
 
 const reviewSchema = new mongoose.Schema(
 	{
@@ -46,6 +47,53 @@ reviewSchema.pre(/^find/, function(next) {
 		select: 'name photo'
 	});
 	next();
+});
+
+// for calculating average rating and no. of rating given by user on current tour
+reviewSchema.statics.calcAverageRating = async function(tourId) {
+	const stats = await this.aggregate([
+		{
+			$match: { tour: tourId }
+		},
+		{
+			$group: {
+				_id: '$tour',
+				nRating: { $sum: 1 },
+				avgRating: { $avg: '$rating' }
+			}
+		}
+	]);
+	console.log(stats);
+	//here we save the save the stats of the currrent document
+	if (stats.length > 0) {
+		await Tour.findByIdAndUpdate(tourId, {
+			ratingQuantity: stats[0].nRating,
+			ratingAverage: stats[0].avgRating
+		});
+	} else {
+		await Tour.findByIdAndUpdate(tourId, {
+			ratingQuantity: 0,
+			ratingAverage: 4.5
+		});
+	}
+};
+//callina a calcAverageRating function by using thos.constructor
+reviewSchema.post('save', function() {
+	// this points to the current review
+	this.constructor.calcAverageRating(this.tour);
+});
+
+//findByIdAndUpdate
+//findByIdAnd Delete
+reviewSchema.pre(/^findOneAnd/, async function(next) {
+	this.r = await this.findOne();
+	console.log(this.r);
+	next();
+});
+
+reviewSchema.post(/^findOneAnd/, async function() {
+	//await this .findOne(); does not work here, query has already executed
+	await this.r.constructor.calcAverageRating(this.r.tour);
 });
 
 const Review = mongoose.model('Review', reviewSchema);

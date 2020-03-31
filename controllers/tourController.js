@@ -1,6 +1,6 @@
 const Tour = require('./../models/tourmodel');
 const catchAsync = require('./../utilis/catchAsync');
-// const AppError = require('./../utilis/appError');
+const AppError = require('./../utilis/appError');
 const factory = require('./handleFactory');
 
 exports.aliasTopTours = async (req, res, next) => {
@@ -11,72 +11,15 @@ exports.aliasTopTours = async (req, res, next) => {
 	next();
 };
 
-exports.getAllTours = factory.getAll(Tour);
 exports.getTour = factory.getOne(Tour, { path: 'reviews' });
-// exports.getTour = catchAsync(async (req, res, next) => {
-// 	const tour = await Tour.findById(req.params.id).populate('reviews');
-// 	//populte is used for getting data from refrencing object from id , as we did to take data of guides from tour
-// 	//we use query middleware, so that we do not have to rewrite the code where we need to geta data from a guides
-// 	// .populate({
-// 	// 	path: 'guides',
-// 	// 	select: '-__v -passwordChangeAt'
-// 	// });
 
-// 	if (!tour) {
-// 		return next(new AppError('No tour found with that ID', 404));
-// 	}
-
-// 	res.status(201).json({
-// 		status: 'success',
-// 		data: {
-// 			tour
-// 		}
-// 	});
-// });
+exports.getAllTours = factory.getAll(Tour);
 
 exports.createTour = factory.createOne(Tour);
-// exports.createTour = catchAsync(async (req, res, next) => {
-// 	const newTour = await Tour.create(req.body);
-// 	res.status(201).json({
-// 		status: 'success',
-// 		data: {
-// 			tour: newTour
-// 		}
-// 	});
-// });
 
 exports.updateTour = factory.updateOne(Tour);
-// exports.updateTour = catchAsync(async (req, res, next) => {
-// 	const tour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
-// 		new: true,
-// 		runValidators: true
-// 	});
-// 	if (!tour) {
-// 		return next(new AppError('No tour found with that ID', 404));
-// 	}
-
-// 	res.status(201).json({
-// 		status: 'success',
-// 		data: {
-// 			tour
-// 		}
-// 	});
-// });
 
 exports.deleteTour = factory.deleteOne(Tour);
-// exports.deleteTour = catchAsync(async (req, res, next) => {
-// 	const tour = await Tour.findByIdAndDelete(req.params.id);
-
-// 	if (!tour) {
-// 		return next(new AppError('No tour found with that ID', 404));
-// 	}
-// 	res.status(202).json({
-// 		status: 'success',
-// 		data: {
-// 			tour: null
-// 		}
-// 	});
-// });
 
 exports.tourStats = catchAsync(async (req, res, next) => {
 	const stats = await Tour.aggregate([
@@ -148,6 +91,57 @@ exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
 		status: 'success',
 		data: {
 			tour: plan
+		}
+	});
+});
+
+exports.getToursWithin = catchAsync(async (req, res, next) => {
+	const { distance, latlng, unit } = req.params;
+	const [lat, lng] = latlng.split(',');
+
+	// convert into radians
+	const radius = unit === 'mi' ? distance / 3963.2 : distance / 6378.1;
+
+	if (!lat || !lng) {
+		next(new AppError('Please provide in the format like this lat, lng', 404));
+	}
+
+	const tours = await Tour.find({
+		startLocation: { $geoWithin: { $centerSphere: [[lng, lat], radius] } }
+	});
+
+	res.status(200).json({
+		status: 'success',
+		results: tours.length,
+		data: {
+			data: tours
+		}
+	});
+});
+
+exports.getDistances = catchAsync(async (req, res, next) => {
+	const { latlng, unit } = req.params;
+	const [lat, lng] = latlng.split(',');
+
+	if (!lat || !lng) {
+		next(new AppError('Please provide in the format like this lat, lng', 404));
+	}
+
+	const distances = await Tour.aggregate([
+		{
+			$geoNear: {
+				near: {
+					type: 'Point',
+					coordinates: [lng * 1, lat * 1]
+				},
+				distanceField: 'distance'
+			}
+		}
+	]);
+	res.status(200).json({
+		status: 'success',
+		data: {
+			data: distances
 		}
 	});
 });
