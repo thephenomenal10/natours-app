@@ -43,7 +43,8 @@ exports.signup = catchAsync(async (req, res, next) => {
 		email: req.body.email,
 		password: req.body.password,
 		passwordConfirm: req.body.passwordConfirm,
-		role: req.body.role
+		role: req.body.role,
+		photo: req.body.photo
 		// passwordChangeAt: req.body.passwordChangeAt
 	});
 	createSendToken(newUser, 201, res);
@@ -70,6 +71,15 @@ exports.login = catchAsync(async (req, res, next) => {
 	createSendToken(user, 201, res);
 });
 
+exports.logout = (req, res) => {
+	res.cookie('jwt', 'loggedOut', {
+		expires: new Date(Date.now() + 10 * 1000),
+		httpOnly: true
+	});
+
+	res.status(200).json({ status: 'success' });
+};
+
 exports.protect = catchAsync(async (req, res, next) => {
 	// getting th token and check of its there
 	let token;
@@ -78,6 +88,8 @@ exports.protect = catchAsync(async (req, res, next) => {
 		req.headers.authorization.startsWith('Bearer')
 	) {
 		token = req.headers.authorization.split(' ')[1];
+	} else if (req.cookies.jwt) {
+		token = req.cookies.jwt;
 	}
 	// console.log(token);
 
@@ -112,6 +124,36 @@ exports.protect = catchAsync(async (req, res, next) => {
 	// console.log(req.user);
 	next();
 });
+
+// only for rendered pages, NO ERRORS
+exports.isLoggedIn = async (req, res, next) => {
+	if (req.cookies.jwt) {
+		try {
+			// verification token
+			const decoded = await promisify(jwt.verify)(
+				req.cookies.jwt,
+				process.env.JWT_SECRET
+			);
+
+			// check if user still exists
+			const currentUser = await User.findById(decoded.id);
+			if (!currentUser) {
+				return next();
+			}
+
+			// check if user change password after the token was issued
+			if (currentUser.changePasswordAfter(decoded.iat)) {
+				return next();
+			}
+			// thre is a logged in user
+			res.locals.user = currentUser;
+			return next();
+		} catch (error) {
+			return next();
+		}
+	}
+	next();
+};
 
 //autorization
 exports.restrictTo = (...roles) => {

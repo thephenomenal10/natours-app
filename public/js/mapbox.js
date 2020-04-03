@@ -1,10 +1,11 @@
 /* eslint-disable */
 console.log('from client side');
 
-const locations = JSON.parse(document.getElementById('map').dataset.locations);
-console.log(locations);
 
-mapboxgl.accessToken =
+
+
+export const displayMap = (locations) => {
+	mapboxgl.accessToken =
 	// 'pk.eyJ1IjoidGhlcGhlbm9tZW5hbCIsImEiOiJjazhnbmtnYWMwMnNyM3FwZWt5dTYxOXRuIn0.ZmULmQOODizASmTiW_VI4g';
 	'pk.eyJ1IjoidGhlcGhlbm9tZW5hbCIsImEiOiJjazhnbmtnYWMwMnNyM3FwZWt5dTYxOXRuIn0.ZmULmQOODizASmTiW_VI4g';
 var map = new mapboxgl.Map({
@@ -48,3 +49,6 @@ map.fitBounds(bounds, {
 		right: 100
 	}
 });
+
+}
+

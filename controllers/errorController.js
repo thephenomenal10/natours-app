@@ -17,12 +17,21 @@ const handleDuplicateFieldsDB = err => {
 	return new AppError(message, 404);
 };
 
-const sendErrorDev = (err, res) => {
-	res.status(err.statusCode).json({
-		status: err.status,
-		error: err,
-		message: err.message,
-		stack: err.stack
+const sendErrorDev = (err, req, res) => {
+	if (req.originalUrl.startsWith('/api')) {
+		//A) API
+		return res.status(err.statusCode).json({
+			status: err.status,
+			error: err,
+			message: err.message,
+			stack: err.stack
+		});
+	}
+
+	//B) RENDERING WEBSITE
+	return res.status(err.statusCode).render('error', {
+		title: 'something went wrong',
+		msg: err.message
 	});
 };
 const handleJWTError = () =>
@@ -31,25 +40,44 @@ const handleJWTError = () =>
 const handleJWTExpireError = () =>
 	new AppError('your token has expired , please login again', 401);
 
-const sendErrorProd = (err, res) => {
-	// Operational, trusted error: send message to client
-	if (err.isOperational) {
-		res.status(err.statusCode).json({
-			status: err.status,
-			message: err.message
-		});
+const sendErrorProd = (err, req, res) => {
+	//API
+	if (req.originalUrl.startsWith('/api')) {
+		// Operational, trusted error: send message to client
 
-		// Programming or other unknown error: don't leak error details
-	} else {
+		if (err.isOperational) {
+			res.status(err.statusCode).json({
+				status: err.status,
+				message: err.message
+			});
+
+			// Programming or other unknown error: don't leak error details
+		}
 		// 1) Log error
 		console.error('ERROR 💥', err);
 
 		// 2) Send generic message
-		res.status(500).json({
+		return res.status(500).json({
 			status: 'error',
 			message: 'Something went very wrong!'
 		});
 	}
+	//B for render page
+	if (err.isOperational) {
+		res.status(err.statusCode).render('error', {
+			title: 'something went wrong',
+			msg: err.message
+		});
+		// Programming or other unknown error: don't leak error details
+	}
+	// 1) Log error
+	console.error('ERROR 💥', err);
+
+	// 2) Send generic message
+	res.status(500).json({
+		status: 'error',
+		message: 'please try again later'
+	});
 };
 
 module.exports = (err, req, res, next) => {
@@ -59,9 +87,10 @@ module.exports = (err, req, res, next) => {
 	err.status = err.status || 'error';
 	console.log(process.env.NODE_ENV);
 	if (process.env.NODE_ENV === 'development') {
-		sendErrorDev(err, res);
+		sendErrorDev(err, req, res);
 	} else if (process.env.NODE_ENV === 'production') {
 		let error = { ...err };
+		error.message = err.message;
 
 		if (error.name === 'CastError') error = handleCastErrorDB(error);
 		if (error.code === 11000) error = handleDuplicateFieldsDB(error);
@@ -70,6 +99,6 @@ module.exports = (err, req, res, next) => {
 		if (error.name === 'JsonWebTokenError') error = handleJWTError();
 		if (error.name === 'TokenExpiredError') error = handleJWTExpireError();
 
-		sendErrorProd(error, res);
+		sendErrorProd(error, req, res);
 	}
 };
