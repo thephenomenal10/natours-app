@@ -44,6 +44,7 @@ app.use('/api', limiter);
 
 //BODY PARSER, READING DATA FROM BODY INOT REQ.BODY
 app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cookieParser());
 
 //Data sanitization agsinst no sql injection
@@ -73,7 +74,7 @@ app.use((req, res, next) => {
 //TESTING MIDDLEWARE
 app.use((req, res, next) => {
 	req.requestTime = new Date().toISOString();
-	console.log(req.cookies);
+	// console.log(req.cookies);
 
 	next();
 });
